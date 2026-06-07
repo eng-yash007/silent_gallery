@@ -1,101 +1,82 @@
-import Image from "next/image";
+import Header from "@/components/Header";
+import { getTasks } from "@/app/actions/tasks";
+import TaskList from "@/components/TaskList";
+import CreateTaskForm from "@/components/CreateTaskForm";
 
-export default function Home() {
+export default async function Home() {
+  const tasks = await getTasks();
+  const remaining = tasks.filter(t => t.status === "pending").length;
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+    <>
+      <Header title="Journal" />
+      <main className="min-h-screen pt-32 pb-20 px-6 md:pl-80 md:pr-10 flex flex-col items-center relative z-10">
+        <section className="w-full max-w-4xl flex flex-col items-center mb-24">
+          <div className="flex gap-4 md:gap-10 mb-10">
+            <div className="w-32 h-44 md:w-52 md:h-72 flip-card-inner rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="flip-card-split"></div>
+              <span className="text-7xl md:text-[10rem] font-bold text-white tracking-tighter z-10 tabular-nums">09</span>
+            </div>
+            <div className="w-32 h-44 md:w-52 md:h-72 flip-card-inner rounded-[2.5rem] flex flex-col items-center justify-center relative overflow-hidden">
+              <div className="flip-card-split"></div>
+              <span className="text-7xl md:text-[10rem] font-bold text-white tracking-tighter z-10 tabular-nums">42</span>
+            </div>
+          </div>
+          <button className="group flex flex-col items-center gap-1 hover:opacity-80 transition-all">
+            <span className="text-headline-lg font-light tracking-tight text-on-surface-variant">Thursday, October 24, 2024</span>
+            <div className="h-[1px] w-0 group-hover:w-full bg-secondary transition-all duration-500"></div>
+          </button>
+        </section>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
+          <section className="md:col-span-7 glass-panel p-10 rounded-[2.5rem] shadow-xl shadow-black/[0.02]">
+            <div className="flex justify-between items-end mb-10">
+              <h3 className="text-xs font-label uppercase tracking-[0.2em] text-outline/80">Today's Protocol</h3>
+              <span className="text-secondary text-sm font-semibold bg-secondary/5 px-3 py-1 rounded-full">{remaining} Remaining</span>
+            </div>
+            
+            <TaskList tasks={tasks} />
+            <CreateTaskForm />
+          </section>
+
+          <section className="md:col-span-5 flex flex-col gap-8">
+            <div className="glass-panel p-10 rounded-[2.5rem] flex flex-col items-center text-center relative overflow-hidden">
+              <div className="absolute inset-0 bg-secondary/5 pointer-events-none"></div>
+              <div className="relative mb-6">
+                <div className="absolute inset-0 bg-secondary/20 blur-2xl rounded-full"></div>
+                <span className="streak-glow material-symbols-outlined text-secondary text-6xl" style={{fontVariationSettings: "'FILL' 1"}}>local_fire_department</span>
+              </div>
+              <h4 className="text-6xl font-black text-on-surface tracking-tighter">12</h4>
+              <p className="text-[0.6875rem] font-label uppercase tracking-[0.2em] text-outline mt-3">Day Continuous Streak</p>
+              <div className="mt-8 px-5 py-2.5 bg-secondary text-white rounded-full text-[0.6875rem] font-bold tracking-wider shadow-lg shadow-secondary/20">
+                ELITE PERFORMANCE
+              </div>
+            </div>
+
+            <div className="relative h-72 rounded-[2.5rem] overflow-hidden group cursor-pointer shadow-xl">
+              <img alt="Mindfulness" className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAyDojqYh4ry2LbwYyCHLBVd4HVAfvh-fWoZkdAuCRnErOS0zxDx5iqiBOldZGcHNQnZbPrqKkGjfO-QPgipKBjdwcaIZ2FHQd_flNJ5Tq2DGrB9S8Autit9ALfZ_INVLYrfvVJGPmibsctKIs7WFrLoO3FOMC2ApTO3SJ7JH12EuIf8g6ZJN4P3AJe2LiFdIMlgnBxdW5QnIhy-I04kEcyNY4ewLKyOaWNJ5LnIFUFs1P5aDV3qkbf0ZnlcDb_BEbRorPrdihAYdDR"/>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-10">
+                <p className="text-white text-sm font-light leading-relaxed">"Your focus determines your reality. Take a moment to breathe."</p>
+              </div>
+            </div>
+          </section>
         </div>
+
+        <footer className="mt-40 w-full max-w-3xl text-center px-10 pb-10">
+          <p className="text-outline/40 text-2xl font-serif italic leading-relaxed">
+            "Consistency is the playground of the dull. But dedication is the engine of the extraordinary."
+          </p>
+          <div className="mt-12 flex justify-center gap-6 opacity-20">
+            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+            <div className="w-1.5 h-1.5 rounded-full bg-primary"></div>
+          </div>
+        </footer>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+      <button className="fixed bottom-10 right-10 w-16 h-16 bg-inverse-surface text-on-secondary rounded-full flex items-center justify-center shadow-2xl hover:scale-110 active:scale-95 transition-all z-50 md:hidden">
+        <span className="material-symbols-outlined text-3xl">add</span>
+      </button>
+    </>
   );
 }
