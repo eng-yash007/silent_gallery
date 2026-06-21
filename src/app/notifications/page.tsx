@@ -1,6 +1,35 @@
 import Header from "@/components/Header";
+import { getDbNotifications, clearAllNotifications } from "@/app/actions/notifications";
+import { revalidatePath } from "next/cache";
 
-export default function Notifications() {
+export default async function Notifications() {
+  const res = await getDbNotifications();
+  const notifications = res.success ? res.data : [];
+
+  const handleClear = async () => {
+    "use server";
+    await clearAllNotifications();
+    revalidatePath("/notifications");
+  };
+
+  const getIcon = (type: string) => {
+    switch (type) {
+      case 'task_overdue': return 'error';
+      case 'task_due_soon': return 'schedule';
+      case 'meeting_soon': return 'videocam';
+      default: return 'notifications';
+    }
+  };
+
+  const getIconColors = (type: string) => {
+    switch (type) {
+      case 'task_overdue': return 'bg-error/10 text-error';
+      case 'task_due_soon': return 'bg-orange-500/10 text-orange-500';
+      case 'meeting_soon': return 'bg-secondary/10 text-secondary';
+      default: return 'bg-zinc-100 text-zinc-500';
+    }
+  };
+
   return (
     <>
       <Header title="Notifications" />
@@ -12,71 +41,48 @@ export default function Notifications() {
               <h3 className="text-xs font-bold uppercase tracking-[0.2em] text-outline mb-1">Activity Stream</h3>
               <p className="text-2xl font-bold tracking-tight text-on-surface">Notifications</p>
             </div>
-            <button className="text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-secondary-dim transition-colors px-4 py-2 bg-secondary/5 rounded-full">
-              Clear All
-            </button>
+            {notifications && notifications.length > 0 && (
+              <form action={handleClear}>
+                <button type="submit" className="text-[11px] font-bold uppercase tracking-widest text-secondary hover:text-secondary-dim transition-colors px-4 py-2 bg-secondary/5 rounded-full">
+                  Clear All
+                </button>
+              </form>
+            )}
           </div>
           <div className="divide-y divide-outline-variant/10">
-            {/* Notification 1 */}
-            <div className="p-8 hover:bg-surface-container-lowest transition-colors cursor-pointer group">
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-secondary/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-secondary text-2xl">emoji_events</span>
-                </div>
-                <div className="flex flex-col flex-grow">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-lg font-bold text-on-surface tracking-tight">Daily Goal Achieved</p>
-                    <span className="text-xs font-medium text-outline-variant">2m ago</span>
-                  </div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    You've completed your 'Editorial Concept' deep work session. Consistent effort is building up.
-                  </p>
-                  <div className="mt-4 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-white bg-secondary rounded-full hover:bg-secondary-dim transition-colors">View Stats</button>
-                    <button className="px-4 py-1.5 text-xs font-bold uppercase tracking-wider text-outline hover:bg-surface-container rounded-full transition-colors">Dismiss</button>
-                  </div>
-                </div>
+            {(!notifications || notifications.length === 0) ? (
+              <div className="p-16 text-center text-outline-variant">
+                <span className="material-symbols-outlined text-5xl mb-4 text-outline-variant/50">notifications_paused</span>
+                <p className="text-lg font-medium">No active notifications</p>
+                <p className="text-sm mt-2">You're completely caught up on your events.</p>
               </div>
-            </div>
-            {/* Notification 2 */}
-            <div className="p-8 hover:bg-surface-container-lowest transition-colors cursor-pointer group">
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-primary text-2xl">auto_awesome</span>
-                </div>
-                <div className="flex flex-col flex-grow">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-lg font-bold text-on-surface tracking-tight">New AI Insight</p>
-                    <span className="text-xs font-medium text-outline-variant">45m ago</span>
+            ) : (
+              notifications.map((notif: any) => (
+                <div key={notif.id} className={`p-8 transition-colors cursor-pointer group ${notif.isRead ? 'bg-surface-container-lowest opacity-70' : 'bg-white hover:bg-surface-container-lowest'}`}>
+                  <div className="flex gap-6 items-start">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${getIconColors(notif.type)}`}>
+                      <span className="material-symbols-outlined text-2xl" style={{fontVariationSettings: "'FILL' 1"}}>{getIcon(notif.type)}</span>
+                    </div>
+                    <div className="flex flex-col flex-grow">
+                      <div className="flex justify-between items-start mb-1">
+                        <p className={`text-lg tracking-tight ${notif.isRead ? 'font-medium text-on-surface-variant' : 'font-bold text-on-surface'}`}>
+                          {notif.title}
+                        </p>
+                        <span className="text-xs font-bold text-primary uppercase tracking-widest">{notif.timeString}</span>
+                      </div>
+                      <p className="text-sm text-on-surface-variant leading-relaxed">
+                        {notif.description}
+                      </p>
+                      {!notif.isRead && (
+                        <div className="mt-4 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-wider text-white bg-secondary rounded-full hover:bg-secondary-dim transition-colors">View Details</button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    Synthesis complete for 'Legacy Project' archival materials. 3 key themes have been extracted for your next brief.
-                  </p>
                 </div>
-              </div>
-            </div>
-            {/* Notification 3 */}
-            <div className="p-8 hover:bg-surface-container-lowest transition-colors cursor-pointer group opacity-60 hover:opacity-100">
-              <div className="flex gap-6 items-start">
-                <div className="w-12 h-12 rounded-full bg-outline-variant/20 flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-outline text-2xl">history_edu</span>
-                </div>
-                <div className="flex flex-col flex-grow">
-                  <div className="flex justify-between items-start mb-1">
-                    <p className="text-lg font-bold text-on-surface tracking-tight">Journal Reminder</p>
-                    <span className="text-xs font-medium text-outline-variant">2h ago</span>
-                  </div>
-                  <p className="text-sm text-on-surface-variant leading-relaxed">
-                    Time for your evening reflection journal entry. Taking 5 minutes now clears the mind for tomorrow.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div className="p-6 border-t border-outline-variant/10 text-center bg-surface-container-lowest">
-            <button className="text-sm uppercase tracking-widest font-bold text-outline hover:text-secondary transition-colors">
-              Load Older Activity
-            </button>
+              ))
+            )}
           </div>
         </div>
       </main>

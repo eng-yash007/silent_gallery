@@ -6,19 +6,37 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
 model Task {
   id        String   @id @default(cuid())
   title     String
+  date      String   @default("") // YYYY-MM-DD
   startTime String?
   endTime   String?
   status    String   @default("pending") // "pending", "completed"
   source    String   @default("local") // "local", "google_calendar"
+  
+  projectId String?
+  project   Project? @relation(fields: [projectId], references: [id])
+  
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model UserStat {
+  id                    String   @id @default("default_user")
+  currentStreak         Int      @default(0)
+  lastVisitDate         String   @default("") // YYYY-MM-DD
+  lastStreakIncrement   String   @default("") // YYYY-MM-DD
+  newsTopic             String   @default("Artificial Intelligence")
+  theme                 String   @default("light")
+  focusDuration         Int      @default(25)
+  silentMode            Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 }
 
 model JournalEntry {
@@ -26,6 +44,8 @@ model JournalEntry {
   title     String
   content   String
   category  String?
+  sentiment String   @default("Neutral")
+  tags      String   @default("") // Comma separated tags
   imageUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -36,7 +56,19 @@ model Project {
   name        String
   description String?
   status      String   @default("active") // "active", "completed", "archived"
-  progress    Int      @default(0)
+  tasks       Task[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  referenceId String   @unique // To prevent duplicate alerts for the same event (e.g. "task-123-due")
+  title       String
+  description String
+  type        String   // "meeting", "task_overdue", "task_due_soon"
+  timeString  String
+  isRead      Boolean  @default(false)
+  link        String?
+  createdAt   DateTime @default(now())
 }

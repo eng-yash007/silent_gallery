@@ -1,31 +1,31 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createTask } from "@/app/actions/tasks";
-import { useFormStatus, useFormState } from "react-dom";
 
-function SubmitButton() {
-  const { pending } = useFormStatus();
-  return (
-    <button disabled={pending} type="submit" className="btn-tactile mt-12 w-full py-5 rounded-2xl bg-secondary text-on-secondary font-bold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50">
-      <span className="material-symbols-outlined">{pending ? "hourglass_empty" : "add"}</span>
-      {pending ? "ADDING PROTOCOL..." : "NEW PROTOCOL"}
-    </button>
-  );
-}
-
-export default function CreateTaskForm() {
-  const [state, formAction] = useFormState(createTask as any, null);
+export default function CreateTaskForm({ projects = [], fixedProjectId }: { projects?: any[], fixedProjectId?: string }) {
   const formRef = useRef<HTMLFormElement>(null);
+  const [defaultDate, setDefaultDate] = useState("");
 
   useEffect(() => {
-    if (state?.success) {
+    // en-CA format gives YYYY-MM-DD reliably in local timezone
+    setDefaultDate(new Date().toLocaleDateString('en-CA'));
+  }, []);
+
+  const handleAction = async (formData: FormData) => {
+    const result = await createTask(null, formData);
+    if (result.success) {
       formRef.current?.reset();
+      // Reset the date field back to today explicitly
+      const dateInput = formRef.current?.elements.namedItem("date") as HTMLInputElement;
+      if (dateInput) {
+        dateInput.value = new Date().toLocaleDateString('en-CA');
+      }
     }
-  }, [state]);
+  };
 
   return (
-    <form ref={formRef} action={formAction} className="mt-8 flex flex-col gap-4">
+    <form ref={formRef} action={handleAction} className="mt-8 flex flex-col gap-4">
       <input 
         name="title" 
         type="text" 
@@ -34,6 +34,13 @@ export default function CreateTaskForm() {
         className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-secondary/50 placeholder:text-outline"
       />
       <div className="flex gap-4">
+        <input 
+          key={defaultDate}
+          name="date" 
+          type="date" 
+          defaultValue={defaultDate || new Date().toISOString().split('T')[0]}
+          className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-secondary/50"
+        />
         <input 
           name="startTime" 
           type="time" 
@@ -45,8 +52,27 @@ export default function CreateTaskForm() {
           className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-secondary/50"
         />
       </div>
-      {state?.error && <p className="text-error text-xs font-bold">{state.error}</p>}
-      <SubmitButton />
+      
+      {fixedProjectId ? (
+        <input type="hidden" name="projectId" value={fixedProjectId} />
+      ) : projects.length > 0 ? (
+        <select 
+          name="projectId"
+          className="w-full bg-surface-container-low border border-outline-variant/30 rounded-xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-secondary/50 text-on-surface-variant appearance-none"
+        >
+          <option value="">No Project Attached</option>
+          {projects.map(p => (
+            <option key={p.id} value={p.id}>{p.name}</option>
+          ))}
+        </select>
+      ) : null}
+
+      <button 
+        type="submit"
+        className="w-full py-4 mt-2 bg-secondary text-on-secondary rounded-xl font-bold tracking-widest uppercase text-xs hover:bg-secondary/90 transition-colors"
+      >
+        Initialize Protocol
+      </button>
     </form>
   );
 }

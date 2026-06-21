@@ -20,6 +20,85 @@
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
     z-index: 50;
   }
+
+  body.sidebar-collapsed main {
+    padding-left: 6rem !important;
+    transition: padding-left 0.3s ease;
+  }
+
+  body main {
+    transition: padding-left 0.3s ease;
+  }
+
+  /* Fullscreen Focus Mode */
+  body.focus-mode {
+    overflow: hidden !important;
+  }
+
+  body.focus-mode header,
+  body.focus-mode footer,
+  body.focus-mode #app-sidebar,
+  body.focus-mode .glass-panel,
+  body.focus-mode > button.fixed {
+    display: none !important;
+  }
+
+  body.focus-mode main {
+    padding: 0 !important;
+    margin: 0 !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    background: #050505 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 9999 !important;
+    display: block !important;
+  }
+
+  body.focus-mode main::before {
+    display: none !important;
+  }
+
+  /* Center the Flip Clock */
+  body.focus-mode .flip-clock-container {
+    position: absolute !important;
+    top: 30% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) scale(1.3) !important;
+    margin: 0 !important;
+  }
+
+  /* Hide the left column of the grid */
+  body.focus-mode .w-full.max-w-5xl.grid > section:first-child {
+    display: none !important;
+  }
+
+  /* Center the Deep Work Widget */
+  body.focus-mode .w-full.max-w-5xl.grid {
+    position: absolute !important;
+    top: 75% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) scale(1.2) !important;
+    display: block !important;
+    margin: 0 !important;
+    width: auto !important;
+  }
+  
+  body.focus-mode .w-full.max-w-5xl.grid > section {
+    display: block !important;
+  }
+
+  /* Hide the stopwatch dial and stickman when in focus mode */
+  body.focus-mode .deep-work-dial,
+  body.focus-mode .clock-stickman-wrapper {
+    display: none !important;
+  }
+
+  /* Hide the fullscreen toggle button when in focus mode */
+  body.focus-mode button[title="Toggle Focus Mode"] {
+    display: none !important;
+  }
 }
 
 @layer components {
@@ -85,46 +164,74 @@ html.dark {
   color-scheme: dark;
 }
 html.dark body {
-  background-color: #0c0e10;
-  color: #e8eaed;
+  background: #0c0e10 !important;
+  color: #e8eaed !important;
+}
+html.dark body::before {
+  opacity: 0.015; /* Subtler noise in dark mode */
 }
 html.dark aside#app-sidebar {
-  background-color: #0f1114;
-  border-color: rgba(255, 255, 255, 0.08);
+  background-color: #0f1114 !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
 }
+
+/* Background mappings */
 html.dark .bg-surface,
 html.dark .bg-background {
   background-color: #0c0e10 !important;
 }
+html.dark .bg-surface-container-lowest,
+html.dark .bg-white {
+  background-color: #121418 !important;
+}
 html.dark .bg-surface-container-low {
   background-color: #14161a !important;
 }
-html.dark .bg-white,
-html.dark .bg-surface-container-lowest {
-  background-color: #16181c !important;
+html.dark .bg-surface-container {
+  background-color: #181a1f !important;
 }
+html.dark .bg-surface-container-high {
+  background-color: #1f2228 !important;
+}
+html.dark .bg-surface-container-highest,
+html.dark .bg-surface-variant {
+  background-color: #262a31 !important;
+}
+
+/* Text mappings */
 html.dark .text-on-surface,
 html.dark .text-\[\#2d3338\] {
   color: #e8eaed !important;
+}
+html.dark .text-on-surface-variant {
+  color: #c4c7cc !important;
 }
 html.dark .text-primary {
   color: #c4c7cc !important;
 }
 html.dark .text-outline,
+html.dark .text-outline-variant,
 html.dark .text-\[\#596065\] {
   color: #9aa0a6 !important;
 }
+
+/* Border mappings */
 html.dark .border-outline-variant\/10,
+html.dark .border-outline-variant\/20,
 html.dark .border-\[\#ebeef2\] {
-  border-color: rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
 }
+
+/* Header & Glass mapping */
 html.dark header.bg-white\/40,
 html.dark header.bg-white\/60,
 html.dark header.bg-white\/80 {
-  background-color: rgba(15, 17, 20, 0.75) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background-color: rgba(15, 17, 20, 0.6) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(16px);
 }
 html.dark .glass-panel {
-  background: rgba(22, 24, 28, 0.65);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(22, 24, 28, 0.5) !important;
+  border-color: rgba(255, 255, 255, 0.05) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
 }

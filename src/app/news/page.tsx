@@ -1,86 +1,100 @@
 import Header from "@/components/Header";
+import { getLiveNews } from "@/app/actions/news";
+import prisma from "@/lib/prisma";
+import RefreshNewsButton from "@/components/RefreshNewsButton";
+import NewsStickman from "@/components/Stickman/NewsStickman";
+import NewsCard from "@/components/NewsCard";
 
-export default function News() {
+export const revalidate = 0; // Ensure this page always fetches fresh news
+
+export default async function News() {
+  const stat = await prisma.userStat.findUnique({ where: { id: "default_user" } });
+  const topic = stat?.newsTopic || "Artificial Intelligence";
+  
+  const newsItems = await getLiveNews();
+
+  // Flipboard already provides clean titles and creators
+  const getHeadlineInfo = (item: any) => {
+    return { title: item.title, source: item.source };
+  };
+
+  // Helper to format the publication date nicely
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
   return (
     <>
-      <Header title="News" />
+      <Header title="Intelligence" />
       <main className="w-full min-h-screen pt-32 pb-20 px-6 md:pl-80 md:pr-10 relative z-10">
-        <div className="pt-32 px-12 pb-24 max-w-4xl">
-          <section className="mb-20">
-            <span className="text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-on-secondary-fixed-variant mb-4 block">
-              Curated Daily
-            </span>
-            <h1 className="text-display-lg md:text-[3.5rem] font-headline font-bold -tracking-[0.02em] leading-tight text-on-surface">
-              Briefings
-            </h1>
-            <p className="text-body-lg text-on-surface-variant mt-6 max-w-lg font-light leading-relaxed">
-              A distilled summary of the day's essential developments in design, technology, and culture.
-            </p>
+        <div className="pt-32 px-4 md:px-12 pb-24 w-full relative">
+          <NewsStickman />
+          <section className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-6 relative z-40">
+            <div>
+              <div className="flex items-center gap-3 mb-4">
+                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                <span className="text-[0.6875rem] font-bold tracking-[0.2em] uppercase text-secondary">
+                  Live Feed Active
+                </span>
+              </div>
+              <h1 className="text-display-lg md:text-[4rem] font-headline font-bold -tracking-[0.03em] leading-none text-on-surface mb-2">
+                Intelligence.
+              </h1>
+              <p className="text-lg text-outline mt-4 max-w-md font-light leading-relaxed">
+                Real-time developments curated specifically for your focus on <span className="text-on-surface font-semibold">"{topic}"</span>.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-4 items-start md:items-end">
+              <RefreshNewsButton />
+              <div className="bg-surface-container-low p-6 rounded-2xl border border-outline-variant/20 min-w-[240px]">
+                <span className="text-xs font-bold uppercase tracking-widest text-outline block mb-2">Current Focus</span>
+                <span className="text-xl font-semibold text-on-surface">{topic}</span>
+                <div className="mt-4 pt-4 border-t border-outline-variant/20 flex justify-between items-center">
+                  <span className="text-[10px] uppercase font-bold text-outline">Updates</span>
+                  <span className="text-xs font-bold text-secondary">Real-time</span>
+                </div>
+              </div>
+            </div>
           </section>
 
-          <div className="flex flex-col space-y-0">
-            <article className="group py-12 transition-all duration-500 hover:translate-x-2 border-b border-outline-variant/10">
-              <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-16">
-                <time className="text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-outline-variant pt-2 w-24">08:30 AM</time>
-                <div className="flex-grow">
-                  <h2 className="text-headline-lg text-2xl md:text-[2rem] font-headline font-semibold leading-tight text-on-surface mb-4 group-hover:text-secondary transition-colors duration-300">
-                    The resurgence of tactile interfaces in industrial design.
-                  </h2>
-                  <p className="text-body-lg text-on-surface-variant font-light leading-relaxed max-w-2xl">
-                    Recent shifts in consumer electronics suggest a move away from pure glass surfaces toward physical feedback loops and mechanical precision.
-                  </p>
-                </div>
-              </div>
-            </article>
+          {newsItems.length === 0 ? (
+            <div className="w-full py-20 flex flex-col items-center justify-center bg-surface-container-lowest rounded-3xl border border-dashed border-outline-variant">
+              <span className="material-symbols-outlined text-4xl text-outline mb-4">satellite_alt</span>
+              <h3 className="text-xl font-semibold text-on-surface">No signals detected</h3>
+              <p className="text-outline mt-2">Try adjusting your topic in the Settings.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
+              {newsItems.map((item, index) => {
+                const { title, source } = getHeadlineInfo(item);
+                const isFeatured = index === 0;
 
-            <article className="group py-12 transition-all duration-500 hover:translate-x-2 border-b border-outline-variant/10">
-              <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-16">
-                <time className="text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-outline-variant pt-2 w-24">11:15 AM</time>
-                <div className="flex-grow">
-                  <h2 className="text-headline-lg text-2xl md:text-[2rem] font-headline font-semibold leading-tight text-on-surface mb-4 group-hover:text-secondary transition-colors duration-300">
-                    Global aesthetic shifts toward muted minimalism.
-                  </h2>
-                  <p className="text-body-lg text-on-surface-variant font-light leading-relaxed max-w-2xl">
-                    Architecture and digital interfaces are converging on a shared language of restraint, focusing on light-play and material honesty.
-                  </p>
-                </div>
-              </div>
-            </article>
+                return (
+                  <NewsCard 
+                    key={index}
+                    item={item}
+                    title={title}
+                    source={source}
+                    date={formatDate(item.pubDate as string)}
+                    isFeatured={isFeatured}
+                  />
+                );
+              })}
+            </div>
+          )}
 
-            <article className="group py-12 transition-all duration-500 hover:translate-x-2 border-b border-outline-variant/10">
-              <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-16">
-                <time className="text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-outline-variant pt-2 w-24">02:45 PM</time>
-                <div className="flex-grow">
-                  <h2 className="text-headline-lg text-2xl md:text-[2rem] font-headline font-semibold leading-tight text-on-surface mb-4 group-hover:text-secondary transition-colors duration-300">
-                    The impact of generative typography on editorial layout.
-                  </h2>
-                  <p className="text-body-lg text-on-surface-variant font-light leading-relaxed max-w-2xl">
-                    Variable fonts are enabling a new era of reactive reading experiences that adapt to environmental context and user preference.
-                  </p>
-                </div>
-              </div>
-            </article>
-
-            <article className="group py-12 transition-all duration-500 hover:translate-x-2">
-              <div className="flex flex-col md:flex-row md:items-start gap-6 md:gap-16">
-                <time className="text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-outline-variant pt-2 w-24">05:20 PM</time>
-                <div className="flex-grow">
-                  <h2 className="text-headline-lg text-2xl md:text-[2rem] font-headline font-semibold leading-tight text-on-surface mb-4 group-hover:text-secondary transition-colors duration-300">
-                    Sustainable materials in premium packaging.
-                  </h2>
-                  <p className="text-body-lg text-on-surface-variant font-light leading-relaxed max-w-2xl">
-                    Luxury brands are successfully pivoting to mycelium-based alternatives, proving that high-end experience doesn't require high environmental cost.
-                  </p>
-                </div>
-              </div>
-            </article>
-          </div>
-
-          <footer className="mt-24 pt-12 border-t border-outline-variant/10 flex justify-between items-center text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-outline-variant">
-            <div>End of Daily Briefing</div>
+          <footer className="mt-24 pt-12 border-t border-outline-variant/10 flex flex-col md:flex-row justify-between items-center text-[0.6875rem] font-bold tracking-[0.05em] uppercase text-outline-variant gap-6">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-outline"></span>
+              Synchronized with Global Feeds
+            </div>
             <div className="flex gap-8">
-              <a href="/progress" className="hover:text-secondary transition-colors">Archive</a>
-              <a href="/settings" className="hover:text-secondary transition-colors">Preferences</a>
+              <a href="/settings" className="hover:text-secondary transition-colors flex items-center gap-2">
+                <span className="material-symbols-outlined text-[14px]">tune</span>
+                Adjust Parameters
+              </a>
             </div>
           </footer>
         </div>
