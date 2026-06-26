@@ -1,14 +1,14 @@
 "use client";
 
-import { useTransition, useEffect } from "react";
+import { useTransition } from "react";
 import { toggleTaskStatus, deleteTask } from "@/app/actions/tasks";
 import type { Task } from "@prisma/client";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function TaskList({ tasks }: { tasks: Task[] }) {
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
-  const handleToggle = (id: string, status: string, e: React.MouseEvent) => {
+  const handleToggle = (id: string, status: string) => {
     startTransition(() => {
       toggleTaskStatus(id, status);
     });
@@ -37,7 +37,7 @@ export default function TaskList({ tasks }: { tasks: Task[] }) {
             className="task-item flex items-center gap-6 group cursor-pointer p-5 bg-white/20 rounded-2xl transition-colors duration-300"
           >
             <div 
-              onClick={(e) => task.source !== "google_calendar" && handleToggle(task.id, task.status, e)}
+              onClick={() => task.source !== "google_calendar" && handleToggle(task.id, task.status)}
               className={`w-8 h-8 rounded-full border-2 flex items-center justify-center transition-all ${task.status === "completed" ? "bg-secondary border-secondary" : "border-outline-variant/40"} ${task.source === "google_calendar" ? "opacity-50 cursor-not-allowed bg-blue-500/10 border-blue-500/30" : "group-hover:border-secondary group-hover:bg-secondary/5 cursor-pointer"}`}
               title={task.source === "google_calendar" ? "Calendar Event" : "Complete Task"}
             >
