@@ -2,11 +2,19 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getAuthUser } from "@/lib/auth";
+
+import winkNLP from "wink-nlp";
+import model from "wink-eng-lite-web-model";
+const nlp = winkNLP(model);
 
 export async function getJournalEntries(query?: string) {
+  const user = await getAuthUser();
+
   if (query) {
     return await prisma.journalEntry.findMany({
       where: {
+        userId: user.id,
         OR: [
           { title: { contains: query } },
           { content: { contains: query } },
@@ -19,15 +27,13 @@ export async function getJournalEntries(query?: string) {
   }
 
   return await prisma.journalEntry.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 }
 
-import winkNLP from "wink-nlp";
-import model from "wink-eng-lite-web-model";
-const nlp = winkNLP(model);
-
 export async function createJournalEntry(prevState: any, formData: FormData) {
+  const user = await getAuthUser();
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const category = formData.get("category") as string;
@@ -55,7 +61,8 @@ export async function createJournalEntry(prevState: any, formData: FormData) {
       content,
       category: category || "Thought",
       sentiment,
-      tags
+      tags,
+      userId: user.id
     }
   });
 
@@ -64,8 +71,9 @@ export async function createJournalEntry(prevState: any, formData: FormData) {
 }
 
 export async function deleteJournalEntry(id: string) {
+  const user = await getAuthUser();
   await prisma.journalEntry.delete({
-    where: { id }
+    where: { id, userId: user.id }
   });
 
   revalidatePath("/journal");
@@ -74,11 +82,13 @@ export async function deleteJournalEntry(id: string) {
 
 export async function saveNewsToJournal(title: string, url: string) {
   try {
+    const user = await getAuthUser();
     await prisma.journalEntry.create({
       data: {
         title: "News Insight",
         content: `**Research Saved:** [${title}](${url})`,
-        category: "Research"
+        category: "Research",
+        userId: user.id
       }
     });
     revalidatePath("/journal");

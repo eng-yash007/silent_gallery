@@ -2,9 +2,12 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getAuthUser } from "@/lib/auth";
 
 export async function getProjects() {
+  const user = await getAuthUser();
   const projects = await prisma.project.findMany({
+    where: { userId: user.id },
     include: {
       tasks: true
     },
@@ -27,8 +30,9 @@ export async function getProjects() {
 }
 
 export async function getProjectById(id: string) {
+  const user = await getAuthUser();
   const project = await prisma.project.findUnique({
-    where: { id },
+    where: { id, userId: user.id },
     include: {
       tasks: {
         orderBy: { createdAt: "desc" }
@@ -52,6 +56,7 @@ export async function getProjectById(id: string) {
 }
 
 export async function createProject(prevState: any, formData: FormData) {
+  const user = await getAuthUser();
   const name = formData.get("name") as string;
   const description = formData.get("description") as string;
   
@@ -60,7 +65,8 @@ export async function createProject(prevState: any, formData: FormData) {
   await prisma.project.create({
     data: {
       name,
-      description
+      description,
+      userId: user.id
     }
   });
 
@@ -70,8 +76,9 @@ export async function createProject(prevState: any, formData: FormData) {
 }
 
 export async function updateProjectStatus(id: string, status: string) {
+  const user = await getAuthUser();
   await prisma.project.update({
-    where: { id },
+    where: { id, userId: user.id },
     data: { status }
   });
 
@@ -80,8 +87,9 @@ export async function updateProjectStatus(id: string, status: string) {
 }
 
 export async function deleteProject(id: string) {
+  const user = await getAuthUser();
   await prisma.project.delete({
-    where: { id }
+    where: { id, userId: user.id }
   });
 
   revalidatePath("/projects");

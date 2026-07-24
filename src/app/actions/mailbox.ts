@@ -1,8 +1,7 @@
 "use server";
 
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { google } from "googleapis";
+import { getAuthUser } from "@/lib/auth";
 
 function getHeader(headers: any[], name: string): string {
   if (!headers) return "";
@@ -38,21 +37,24 @@ export interface MailboxData {
   };
 }
 
+function getGmailClient(accessToken: string) {
+  const auth = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET
+  );
+  auth.setCredentials({ access_token: accessToken });
+  return google.gmail({ version: "v1", auth });
+}
+
 export async function fetchAndClassifyEmails(): Promise<{ success: boolean; data?: MailboxData; error?: string }> {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getAuthUser();
 
-    if (!session || !(session as any).accessToken) {
+    if (!user.accessToken) {
       return { success: false, error: "Not authenticated or missing access token. Please sign in with Google." };
     }
 
-    const auth = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET
-    );
-    auth.setCredentials({ access_token: (session as any).accessToken });
-
-    const gmail = google.gmail({ version: "v1", auth });
+    const gmail = getGmailClient(user.accessToken);
 
     // Fetch up to 40 recent emails from the inbox
     const res = await gmail.users.messages.list({
@@ -156,12 +158,10 @@ export async function fetchAndClassifyEmails(): Promise<{ success: boolean; data
 // Interactivity Actions
 export async function markEmailAsRead(messageId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !(session as any).accessToken) throw new Error("Unauthorized");
+    const user = await getAuthUser();
+    if (!user.accessToken) throw new Error("Unauthorized");
 
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: (session as any).accessToken });
-    const gmail = google.gmail({ version: "v1", auth });
+    const gmail = getGmailClient(user.accessToken);
 
     await gmail.users.messages.modify({
       userId: "me",
@@ -180,12 +180,10 @@ export async function markEmailAsRead(messageId: string): Promise<{ success: boo
 
 export async function archiveEmail(messageId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !(session as any).accessToken) throw new Error("Unauthorized");
+    const user = await getAuthUser();
+    if (!user.accessToken) throw new Error("Unauthorized");
 
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: (session as any).accessToken });
-    const gmail = google.gmail({ version: "v1", auth });
+    const gmail = getGmailClient(user.accessToken);
 
     await gmail.users.messages.modify({
       userId: "me",
@@ -204,12 +202,10 @@ export async function archiveEmail(messageId: string): Promise<{ success: boolea
 
 export async function getFullEmail(messageId: string): Promise<{ success: boolean; data?: any; error?: string }> {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session || !(session as any).accessToken) throw new Error("Unauthorized");
+    const user = await getAuthUser();
+    if (!user.accessToken) throw new Error("Unauthorized");
 
-    const auth = new google.auth.OAuth2();
-    auth.setCredentials({ access_token: (session as any).accessToken });
-    const gmail = google.gmail({ version: "v1", auth });
+    const gmail = getGmailClient(user.accessToken);
 
     const msgRes = await gmail.users.messages.get({
       userId: "me",

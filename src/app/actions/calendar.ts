@@ -1,20 +1,19 @@
 "use server";
 
 import { google } from "googleapis";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { getAuthUser } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 
 // Helper to get authenticated Google Calendar client
 async function getCalendarClient() {
-  const session: any = await getServerSession(authOptions);
+  const user = await getAuthUser();
   
-  if (!session || !session.accessToken) {
+  if (!user.accessToken) {
     throw new Error("Not authenticated or missing access token. Please sign in with Google.");
   }
 
   const oauth2Client = new google.auth.OAuth2();
-  oauth2Client.setCredentials({ access_token: session.accessToken });
+  oauth2Client.setCredentials({ access_token: user.accessToken });
 
   return google.calendar({ version: "v3", auth: oauth2Client });
 }

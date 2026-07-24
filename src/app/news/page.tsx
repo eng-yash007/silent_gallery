@@ -1,6 +1,7 @@
 import Header from "@/components/Header";
 import { getLiveNews } from "@/app/actions/news";
 import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth";
 import RefreshNewsButton from "@/components/RefreshNewsButton";
 import NewsStickman from "@/components/Stickman/NewsStickman";
 import NewsCard from "@/components/NewsCard";
@@ -8,7 +9,8 @@ import NewsCard from "@/components/NewsCard";
 export const revalidate = 0; // Ensure this page always fetches fresh news
 
 export default async function News() {
-  const stat = await prisma.userStat.findUnique({ where: { id: "default_user" } });
+  const user = await getAuthUser();
+  const stat = await prisma.userStat.findUnique({ where: { userId: user.id } });
   const topic = stat?.newsTopic || "Artificial Intelligence";
   
   const newsItems = await getLiveNews();

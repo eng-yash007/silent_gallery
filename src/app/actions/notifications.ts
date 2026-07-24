@@ -1,11 +1,8 @@
 "use server";
 
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { google } from "googleapis";
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth";
 
 export type NotificationType = 'task_overdue' | 'task_due_soon' | 'meeting_soon';
 
@@ -24,14 +21,14 @@ export interface SmartNotification {
 // Poller function to check for upcoming events and create DB records
 export async function pollAndCreateNotifications() {
   try {
-    const session = await getServerSession(authOptions);
+    const user = await getAuthUser();
     const newNotifications: any[] = [];
     const now = new Date();
 
     // 1. Check Local Tasks
     try {
       const tasks = await prisma.task.findMany({
-        where: { status: "pending" }
+        where: { status: "pending", userId: user.id }
       });
 
       for (const task of tasks) {
@@ -80,7 +77,8 @@ export async function pollAndCreateNotifications() {
                 description: task.title,
                 type,
                 timeString: timeDisplay,
-                link: "/projects"
+                link: "/projects",
+                userId: user.id
               }
             });
             newNotifications.push(notif);
@@ -92,10 +90,10 @@ export async function pollAndCreateNotifications() {
     }
 
     // 2. Check Google Calendar (Meetings Soon)
-    if (session && (session as any).accessToken) {
+    if (user.accessToken) {
       try {
         const auth = new google.auth.OAuth2();
-        auth.setCredentials({ access_token: (session as any).accessToken });
+        auth.setCredentials({ access_token: user.accessToken });
         const calendar = google.calendar({ version: 'v3', auth });
 
         // Get events for the next 15 mins
@@ -132,7 +130,8 @@ export async function pollAndCreateNotifications() {
                     description: event.summary || "No Title",
                     type: "meeting_soon",
                     timeString: `in ${minsDiff} mins`,
-                    link: "/calendar"
+                    link: "/calendar",
+                    userId: user.id
                   }
                 });
                 newNotifications.push(notif);
@@ -156,7 +155,9 @@ export async function pollAndCreateNotifications() {
 // Fetch historical notifications
 export async function getDbNotifications() {
   try {
+    const user = await getAuthUser();
     const notifications = await prisma.notification.findMany({
+      where: { userId: user.id },
       orderBy: { createdAt: "desc" },
       take: 50
     });
@@ -168,7 +169,10 @@ export async function getDbNotifications() {
 
 export async function clearAllNotifications() {
   try {
-    await prisma.notification.deleteMany();
+    const user = await getAuthUser();
+    await prisma.notification.deleteMany({
+      where: { userId: user.id }
+    });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -177,8 +181,9 @@ export async function clearAllNotifications() {
 
 export async function markAllNotificationsRead() {
   try {
+    const user = await getAuthUser();
     await prisma.notification.updateMany({
-      where: { isRead: false },
+      where: { isRead: false, userId: user.id },
       data: { isRead: true }
     });
     return { success: true };

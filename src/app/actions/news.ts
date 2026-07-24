@@ -2,16 +2,18 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getAuthUser } from "@/lib/auth";
 import Parser from "rss-parser";
 
 const parser = new Parser();
 
 export async function updateNewsTopic(prevState: any, formData: FormData) {
+  const user = await getAuthUser();
   const topic = formData.get("topic") as string;
   if (!topic) return { error: "Topic is required" };
 
   await prisma.userStat.update({
-    where: { id: "default_user" },
+    where: { userId: user.id },
     data: { newsTopic: topic }
   });
 
@@ -22,7 +24,8 @@ export async function updateNewsTopic(prevState: any, formData: FormData) {
 
 export async function getLiveNews() {
   try {
-    const stat = await prisma.userStat.findUnique({ where: { id: "default_user" } });
+    const user = await getAuthUser();
+    const stat = await prisma.userStat.findUnique({ where: { userId: user.id } });
     const topic = stat?.newsTopic || "Artificial Intelligence";
 
     // Format topic for Flipboard (remove spaces, lowercase)

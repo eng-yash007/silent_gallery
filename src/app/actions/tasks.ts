@@ -2,16 +2,20 @@
 
 import prisma from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { getAuthUser } from "@/lib/auth";
 
 export async function getTasks() {
+  const user = await getAuthUser();
   return await prisma.task.findMany({
+    where: { userId: user.id },
     orderBy: { createdAt: "desc" },
   });
 }
 
 export async function getTasksByDate(date: string) {
+  const user = await getAuthUser();
   const tasks = await prisma.task.findMany({
-    where: { date },
+    where: { date, userId: user.id },
     // Order by createdAt first, then we will sort in JS to handle null startTimes correctly
     orderBy: { createdAt: "asc" },
   });
@@ -28,6 +32,7 @@ export async function getTasksByDate(date: string) {
 }
 
 export async function createTask(prevState: any, formData: FormData) {
+  const user = await getAuthUser();
   const title = formData.get("title") as string;
   let date = formData.get("date") as string;
   const startTime = formData.get("startTime") as string | null;
@@ -47,6 +52,7 @@ export async function createTask(prevState: any, formData: FormData) {
       startTime,
       endTime,
       source: "local",
+      userId: user.id,
       ...(projectId ? { projectId } : {})
     }
   });
@@ -59,10 +65,11 @@ export async function createTask(prevState: any, formData: FormData) {
 }
 
 export async function toggleTaskStatus(id: string, currentStatus: string) {
+  const user = await getAuthUser();
   const newStatus = currentStatus === "pending" ? "completed" : "pending";
   
   await prisma.task.update({
-    where: { id },
+    where: { id, userId: user.id },
     data: { status: newStatus }
   });
 
@@ -74,8 +81,9 @@ export async function toggleTaskStatus(id: string, currentStatus: string) {
 }
 
 export async function deleteTask(id: string) {
+  const user = await getAuthUser();
   await prisma.task.delete({
-    where: { id }
+    where: { id, userId: user.id }
   });
 
   await syncStreak();
@@ -86,13 +94,14 @@ export async function deleteTask(id: string) {
 }
 
 export async function syncStreak() {
+  const user = await getAuthUser();
   const todayDate = new Date();
   const today = todayDate.toISOString().split('T')[0];
   
-  let stat = await prisma.userStat.findUnique({ where: { id: "default_user" } });
+  let stat = await prisma.userStat.findUnique({ where: { userId: user.id } });
   if (!stat) {
     stat = await prisma.userStat.create({
-      data: { id: "default_user", currentStreak: 0, lastVisitDate: today, lastStreakIncrement: "" }
+      data: { userId: user.id, currentStreak: 0, lastVisitDate: today, lastStreakIncrement: "" }
     });
   } 
 
@@ -105,19 +114,19 @@ export async function syncStreak() {
     // If last visit was before yesterday, and last increment wasn't yesterday -> streak broken
     if (stat.lastVisitDate < yesterday && stat.lastStreakIncrement !== yesterday) {
       stat = await prisma.userStat.update({
-        where: { id: "default_user" },
+        where: { userId: user.id },
         data: { currentStreak: 0, lastVisitDate: today }
       });
     } else {
       stat = await prisma.userStat.update({
-        where: { id: "default_user" },
+        where: { userId: user.id },
         data: { lastVisitDate: today }
       });
     }
   }
 
   // Calculate completion for today
-  const tasks = await prisma.task.findMany({ where: { date: today } });
+  const tasks = await prisma.task.findMany({ where: { date: today, userId: user.id } });
   if (tasks.length > 0) {
     const completed = tasks.filter(t => t.status === "completed").length;
     const ratio = completed / tasks.length;
@@ -125,7 +134,7 @@ export async function syncStreak() {
     // Increment INSTANTLY if > 70% and hasn't been incremented today
     if (ratio >= 0.7 && stat.lastStreakIncrement !== today) {
       stat = await prisma.userStat.update({
-        where: { id: "default_user" },
+        where: { userId: user.id },
         data: { 
           currentStreak: stat.currentStreak + 1,
           lastStreakIncrement: today

@@ -1,6 +1,7 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth";
 
 export type SearchResult = {
   id: string;
@@ -15,6 +16,7 @@ export async function searchGlobal(query: string): Promise<SearchResult[]> {
     return [];
   }
 
+  const user = await getAuthUser();
   const searchTerm = query.trim();
   const results: SearchResult[] = [];
 
@@ -22,6 +24,7 @@ export async function searchGlobal(query: string): Promise<SearchResult[]> {
     // Search Tasks
     const tasks = await prisma.task.findMany({
       where: {
+        userId: user.id,
         title: {
           contains: searchTerm
         }
@@ -43,6 +46,7 @@ export async function searchGlobal(query: string): Promise<SearchResult[]> {
     // Search Projects
     const projects = await prisma.project.findMany({
       where: {
+        userId: user.id,
         OR: [
           { name: { contains: searchTerm } },
           { description: { contains: searchTerm } }
@@ -65,6 +69,7 @@ export async function searchGlobal(query: string): Promise<SearchResult[]> {
     // Search Journal Entries
     const journals = await prisma.journalEntry.findMany({
       where: {
+        userId: user.id,
         OR: [
           { title: { contains: searchTerm } },
           { content: { contains: searchTerm } }

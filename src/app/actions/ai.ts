@@ -1,17 +1,20 @@
 "use server";
 
 import prisma from "@/lib/prisma";
+import { getAuthUser } from "@/lib/auth";
 
 export async function generateAIBriefing(date: string, localTimeString: string, currentDate: string) {
   try {
+    const user = await getAuthUser();
+
     // 1. Fetch data
     const tasks = await prisma.task.findMany({
-      where: { date },
+      where: { date, userId: user.id },
       include: { project: true },
       orderBy: { startTime: 'asc' }
     });
 
-    const userStat = await prisma.userStat.findFirst();
+    const userStat = await prisma.userStat.findUnique({ where: { userId: user.id } });
     const streak = userStat?.currentStreak || 0;
 
     // 2. Analyze data
