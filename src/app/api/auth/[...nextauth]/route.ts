@@ -21,35 +21,24 @@ export const authOptions: NextAuthOptions = {
   ],
   secret: process.env.NEXTAUTH_SECRET,
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
   callbacks: {
-    async session({ session, user }: any) {
-      // Attach userId and accessToken to the session
-      if (session?.user) {
-        session.userId = user.id;
+    async jwt({ token, user, account }: any) {
+      if (user) {
+        token.userId = user.id;
       }
-
-      // Get the latest access token from the Account table
-      const account = await prisma.account.findFirst({
-        where: { userId: user.id, provider: "google" },
-      });
-
       if (account) {
-        session.accessToken = account.access_token;
+        token.accessToken = account.access_token;
       }
-
-      return session;
+      return token;
     },
-  },
-  events: {
-    async createUser({ user }) {
-      // Auto-create UserStat when a new user signs up
-      await prisma.userStat.create({
-        data: {
-          userId: user.id,
-        },
-      });
+    async session({ session, token }: any) {
+      if (session?.user) {
+        session.userId = token.userId;
+      }
+      session.accessToken = token.accessToken;
+      return session;
     },
   },
 };
